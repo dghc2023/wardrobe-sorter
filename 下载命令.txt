@@ -1,0 +1,17 @@
+========== 第1步：创建文件夹 ==========
+mkdir C:\Android\platforms C:\Android\build-tools C:\Android\platform-tools
+
+========== 第2步：下载4个文件（逐条复制运行） ==========
+
+curl -x http://127.0.0.1:7892 -L -o C:\Android\platform-tools.zip https://dl.google.com/android/repository/platform-tools_r37.0.0-windows.zip
+
+curl -x http://127.0.0.1:7892 -L -o C:\Android\platform-34.zip https://dl.google.com/android/repository/platform-34_r03.zip
+
+curl -x http://127.0.0.1:7892 -L -o C:\Android\build-tools-34.zip https://dl.google.com/android/repository/build-tools_r34.0.0-windows.zip
+
+curl -x http://127.0.0.1:7892 -L -o C:\Android\gradle-8.14.3-all.zip https://services.gradle.org/distributions/gradle-8.14.3-all.zip
+
+========== 第3步：检查是否下载成功（看文件大小） ==========
+dir C:\Android\*.zip
+
+看看4个文件的大小，应该在几十MB到300MB左右，不是几百字节就对了。

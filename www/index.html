@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>智能衣橱分拣一体机</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 头部状态栏 -->
+    <header id="header">
+      <div class="header-left">
+        <span class="status-dot"></span>
+        <span class="status-text">系统运行中</span>
+      </div>
+      <div class="header-title">智能衣橱分拣一体机 v2.1</div>
+      <div class="header-right">
+        <span class="time" id="currentTime">00:00</span>
+      </div>
+    </header>
+
+    <!-- 主识别区域 -->
+    <main id="scanner">
+      <!-- 摄像头模拟背景 -->
+      <div class="camera-view">
+        <!-- 网格扫描线 -->
+        <div class="scan-grid"></div>
+        <!-- 扫描框 -->
+        <div class="scan-frame">
+          <div class="frame-corner tl"></div>
+          <div class="frame-corner tr"></div>
+          <div class="frame-corner bl"></div>
+          <div class="frame-corner br"></div>
+          <div class="scan-line"></div>
+        </div>
+        <!-- 扫描提示文字 -->
+        <div class="scan-hint">
+          <div class="scan-icon">📷</div>
+          <span id="scanStatusText">将衣物置于扫描区域</span>
+        </div>
+        <!-- 环境光效 -->
+        <div class="ambient-light"></div>
+      </div>
+
+      <!-- 底部操作栏 -->
+      <div class="bottom-bar">
+        <button id="scanBtn" class="scan-btn" onclick="startScan()">
+          <span class="btn-icon">◉</span>
+          <span class="btn-text">拍照识别</span>
+        </button>
+        <div class="btn-sub">对准衣物 · 自动识别材质</div>
+      </div>
+    </main>
+
+    <!-- 识别结果悬浮窗 -->
+    <div id="resultOverlay" class="result-overlay hidden">
+      <div class="result-panel">
+        <div class="result-header">
+          <span class="result-icon">✓</span>
+          <span>物料分析结果</span>
+          <button class="close-btn" onclick="closeResult()">✕</button>
+        </div>
+        <div class="result-body">
+          <!-- 识别物品主图 -->
+          <div class="item-preview">
+            <div class="item-image" id="itemImage"></div>
+            <div class="item-name" id="itemName">-</div>
+          </div>
+
+          <!-- 详细分析信息 -->
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">成衣种类</span>
+              <span class="info-value" id="infoType">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">面料成分</span>
+              <span class="info-value" id="infoFabric">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">建议拆解方案</span>
+              <span class="info-value" id="infoDisassemble">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">库存分类建议</span>
+              <span class="info-value" id="infoCategory">-</span>
+            </div>
+          </div>
+
+          <!-- 拆解素材图区域 -->
+          <div class="material-section">
+            <div class="material-title">素材拆解分析图</div>
+            <div class="material-grid" id="materialGrid">
+              <div class="material-item">
+                <div class="material-img" id="mat1"></div>
+                <span class="material-label" id="matLabel1">-</span>
+              </div>
+              <div class="material-item">
+                <div class="material-img" id="mat2"></div>
+                <span class="material-label" id="matLabel2">-</span>
+              </div>
+              <div class="material-item">
+                <div class="material-img" id="mat3"></div>
+                <span class="material-label" id="matLabel3">-</span>
+              </div>
+              <div class="material-item">
+                <div class="material-img" id="mat4"></div>
+                <span class="material-label" id="matLabel4">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 置信度 -->
+          <div class="confidence-bar">
+            <span class="conf-label">AI 识别置信度</span>
+            <div class="conf-track">
+              <div class="conf-fill" id="confidenceFill" style="width: 0%"></div>
+            </div>
+            <span class="conf-value" id="confidenceValue">0%</span>
+          </div>
+        </div>
+        <div class="result-footer">
+          <button class="action-btn primary" onclick="closeResult()">确认分拣</button>
+          <button class="action-btn secondary" onclick="closeResult();startScan()">重新识别</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 扫描中动画遮罩 -->
+    <div id="scanningOverlay" class="scanning-overlay hidden">
+      <div class="scanning-content">
+        <div class="scanning-spinner"></div>
+        <div class="scanning-text">AI 实时分析中...</div>
+        <div class="scanning-progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="scanning-detail" id="scanningDetail">正在提取面料特征</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
