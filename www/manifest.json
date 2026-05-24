@@ -1,7 +1,7 @@
 {
-  "name": "智能衣橱分拣一体机",
-  "short_name": "衣橱分拣",
-  "description": "基于AI视觉识别的智能衣橱分拣系统",
+  "name": "智能素材分拣一体机",
+  "short_name": "素材分拣",
+  "description": "基于AI视觉识别的智能素材分拣系统",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0a0e1a",

@@ -3,95 +3,176 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>智能衣橱分拣一体机</title>
+  <title>智能素材分拣一体机</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="app">
-    <!-- 头部状态栏 -->
-    <header id="header">
-      <div class="header-left">
-        <span class="status-dot"></span>
-        <span class="status-text">系统运行中</span>
-      </div>
-      <div class="header-title">智能衣橱分拣一体机 v2.1</div>
-      <div class="header-right">
-        <span class="time" id="currentTime">00:00</span>
-      </div>
-    </header>
+    <!-- 摄像头画面 -->
+    <video id="cameraFeed" autoplay playsinline></video>
 
-    <!-- 主识别区域 -->
-    <main id="scanner">
-      <!-- 摄像头模拟背景 -->
-      <div class="camera-view">
-        <!-- 网格扫描线 -->
-        <div class="scan-grid"></div>
-        <!-- 扫描框 -->
+    <!-- 摄像头遮罩覆盖层 -->
+    <div class="camera-overlay">
+      <!-- 测量网格 -->
+      <div class="measure-grid"></div>
+
+      <!-- 顶部信息栏 -->
+      <header id="header">
+        <div class="header-left">
+          <span class="status-dot"></span>
+          <span class="status-text">系统就绪</span>
+        </div>
+        <div class="header-title">智能素材分拣一体机</div>
+        <div class="header-right">
+          <span class="time" id="currentTime">00:00</span>
+        </div>
+      </header>
+
+      <!-- 扫描区域 -->
+      <div class="scan-area">
         <div class="scan-frame">
           <div class="frame-corner tl"></div>
           <div class="frame-corner tr"></div>
           <div class="frame-corner bl"></div>
           <div class="frame-corner br"></div>
           <div class="scan-line"></div>
+          <!-- 刻度标记 -->
+          <div class="tick-marks top"></div>
+          <div class="tick-marks bottom"></div>
+          <div class="tick-marks left"></div>
+          <div class="tick-marks right"></div>
         </div>
-        <!-- 扫描提示文字 -->
+
         <div class="scan-hint">
-          <div class="scan-icon">📷</div>
-          <span id="scanStatusText">将衣物置于扫描区域</span>
+          <span id="scanStatusText">将待分拣物料置于扫描框内</span>
         </div>
-        <!-- 环境光效 -->
-        <div class="ambient-light"></div>
+
+        <!-- 环境光传感器图标 -->
+        <div class="env-indicator">
+          <span class="env-dot"></span>
+          <span>光照适宜</span>
+        </div>
       </div>
 
       <!-- 底部操作栏 -->
       <div class="bottom-bar">
+        <div class="camera-switch" onclick="switchCamera()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
         <button id="scanBtn" class="scan-btn" onclick="startScan()">
-          <span class="btn-icon">◉</span>
-          <span class="btn-text">拍照识别</span>
+          <span class="btn-ring"></span>
+          <span class="btn-inner">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3v18M3 12h18"/></svg>
+          </span>
         </button>
-        <div class="btn-sub">对准衣物 · 自动识别材质</div>
+        <div class="gallery-btn" onclick="pickFromGallery()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 4-4 3 3 5-5 6 6"/></svg>
+        </div>
       </div>
-    </main>
+    </div>
 
-    <!-- 识别结果悬浮窗 -->
+    <!-- 扫描中提示 -->
+    <div id="scanningOverlay" class="scanning-overlay hidden">
+      <div class="scanning-panel">
+        <div class="scanning-spinner">
+          <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="#E2E8F0" stroke-width="3"/><circle cx="24" cy="24" r="20" fill="none" stroke="#0A66C2" stroke-width="3" stroke-dasharray="125.6" stroke-dashoffset="0" class="spinner-arc"/></svg>
+        </div>
+        <div class="scanning-text">AI 智能分析中</div>
+        <div class="scanning-detail" id="scanningDetail">正在提取物料特征</div>
+        <div class="scanning-progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="scanning-stats">
+          <div class="stat">
+            <span class="stat-label">分辨率</span>
+            <span class="stat-value" id="statResolution">-</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-label">帧分析</span>
+            <span class="stat-value" id="statFrames">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 识别结果面板 -->
     <div id="resultOverlay" class="result-overlay hidden">
       <div class="result-panel">
+        <div class="result-handle"></div>
+
         <div class="result-header">
-          <span class="result-icon">✓</span>
-          <span>物料分析结果</span>
-          <button class="close-btn" onclick="closeResult()">✕</button>
+          <div class="result-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <span>物料分析报告</span>
+          <button class="close-btn" onclick="closeResult()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
+
         <div class="result-body">
           <!-- 识别物品主图 -->
           <div class="item-preview">
-            <div class="item-image" id="itemImage"></div>
-            <div class="item-name" id="itemName">-</div>
-          </div>
-
-          <!-- 详细分析信息 -->
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">成衣种类</span>
-              <span class="info-value" id="infoType">-</span>
+            <div class="item-image" id="itemImage">
+              <span class="item-emoji" id="itemEmoji">👕</span>
             </div>
-            <div class="info-item">
-              <span class="info-label">面料成分</span>
-              <span class="info-value" id="infoFabric">-</span>
+            <div class="item-info">
+              <div class="item-name" id="itemName">-</div>
+              <div class="item-tag" id="itemTag">-</div>
             </div>
-            <div class="info-item">
-              <span class="info-label">建议拆解方案</span>
-              <span class="info-value" id="infoDisassemble">-</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">库存分类建议</span>
-              <span class="info-value" id="infoCategory">-</span>
+            <div class="confidence-badge" id="confidenceBadge">
+              <span class="conf-num" id="confidenceValue">0%</span>
             </div>
           </div>
 
-          <!-- 拆解素材图区域 -->
+          <!-- 分析详情卡片 -->
+          <div class="detail-cards">
+            <div class="detail-card">
+              <div class="card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A66C2" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+              </div>
+              <div class="card-body">
+                <span class="card-label">成衣种类</span>
+                <span class="card-value" id="infoType">-</span>
+              </div>
+            </div>
+            <div class="detail-card">
+              <div class="card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              </div>
+              <div class="card-body">
+                <span class="card-label">面料成分</span>
+                <span class="card-value" id="infoFabric">-</span>
+              </div>
+            </div>
+            <div class="detail-card wide">
+              <div class="card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+              </div>
+              <div class="card-body">
+                <span class="card-label">建议拆解方案</span>
+                <span class="card-value" id="infoDisassemble">-</span>
+              </div>
+            </div>
+            <div class="detail-card wide">
+              <div class="card-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+              <div class="card-body">
+                <span class="card-label">库存分类建议</span>
+                <span class="card-value" id="infoCategory">-</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 素材拆解图 -->
           <div class="material-section">
-            <div class="material-title">素材拆解分析图</div>
+            <div class="section-label">素材拆解分析</div>
             <div class="material-grid" id="materialGrid">
               <div class="material-item">
                 <div class="material-img" id="mat1"></div>
@@ -111,32 +192,30 @@
               </div>
             </div>
           </div>
-
-          <!-- 置信度 -->
-          <div class="confidence-bar">
-            <span class="conf-label">AI 识别置信度</span>
-            <div class="conf-track">
-              <div class="conf-fill" id="confidenceFill" style="width: 0%"></div>
-            </div>
-            <span class="conf-value" id="confidenceValue">0%</span>
-          </div>
         </div>
+
         <div class="result-footer">
-          <button class="action-btn primary" onclick="closeResult()">确认分拣</button>
-          <button class="action-btn secondary" onclick="closeResult();startScan()">重新识别</button>
+          <button class="action-btn primary" onclick="closeResult()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+            确认分拣
+          </button>
+          <button class="action-btn secondary" onclick="closeResult();startScan()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            重新识别
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- 扫描中动画遮罩 -->
-    <div id="scanningOverlay" class="scanning-overlay hidden">
-      <div class="scanning-content">
-        <div class="scanning-spinner"></div>
-        <div class="scanning-text">AI 实时分析中...</div>
-        <div class="scanning-progress">
-          <div class="progress-bar" id="progressBar"></div>
+    <!-- 相机权限请求 -->
+    <div id="permitOverlay" class="permit-overlay hidden">
+      <div class="permit-panel">
+        <div class="permit-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#0A66C2" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </div>
-        <div class="scanning-detail" id="scanningDetail">正在提取面料特征</div>
+        <div class="permit-title">需要相机权限</div>
+        <div class="permit-desc">请允许使用相机以开始物料识别</div>
+        <button class="permit-btn" onclick="requestPermission()">启用相机</button>
       </div>
     </div>
   </div>
