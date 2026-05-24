@@ -407,7 +407,7 @@ function viewHistoryItem(id) {
   renderAll();
 }
 function openManualInput() {
-  ['manualName','manualType','manualFabric','manualDisassemble','manualCategory'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('manualName').value = '';
   document.getElementById('manualOverlay').classList.remove('hidden');
 }
 
@@ -415,13 +415,14 @@ function closeManualInput() { document.getElementById('manualOverlay').classList
 
 function submitManualInput() {
   const name = document.getElementById('manualName').value.trim() || '未命名物料';
-  const type = document.getElementById('manualType').value.trim() || '未分类';
-  const fabric = document.getElementById('manualFabric').value.trim() || '未指定';
-  const disassemble = document.getElementById('manualDisassemble').value.trim() || '待确认';
-  const category = document.getElementById('manualCategory').value.trim() || '未分类';
 
   currentResults = [{
-    name, type, fabric, disassemble, category, confidence: 100,
+    name,
+    type: '手动输入',
+    fabric: '待确认',
+    disassemble: '待确认',
+    category: '待确认',
+    confidence: 100,
     materials: [{ label: '待确认', color: '#64748B' }]
   }];
   currentImage = null;
