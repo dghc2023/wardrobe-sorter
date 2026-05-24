@@ -9,9 +9,11 @@ const API_CONFIG = {
 let videoStream = null;
 let currentCamera = 'environment';
 let currentResults = null;
+let currentImage = null; // 当前扫描的原图
 let selectedIndex = 0;
 let isScanning = false;
 let progressInterval = null;
+const HISTORY_KEY = 'wardrobe_scan_history';
 
 function updateTime() {
   const t = new Date().toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
@@ -53,7 +55,11 @@ function pickFromGallery() {
   input.type = 'file'; input.accept = 'image/*';
   input.onchange = (e) => {
     const file = e.target.files[0];
-    if (file) { const r = new FileReader(); r.onload = () => recognizeImage(r.result); r.readAsDataURL(file); }
+    if (file) {
+      const r = new FileReader();
+      r.onload = () => { currentImage = r.result; recognizeImage(r.result); };
+      r.readAsDataURL(file);
+    }
   };
   input.click();
 }
@@ -187,7 +193,8 @@ function startScan() {
   if (isScanning) return;
   if (!videoStream) { startCamera('environment'); return; }
   const img = captureFrame();
-  if (img) { recognizeImage(img); return; }
+  if (img) { currentImage = img; recognizeImage(img); return; }
+  currentImage = null;
   const shuffled = [...MOCK_DATA].sort(() => Math.random() - 0.5);
   currentResults = shuffled.slice(0, 3);
   selectedIndex = 0;
@@ -234,10 +241,20 @@ function selectResult(index) {
   renderDetail(index);
 }
 
-// ===== 渲染详情（纯文字素材） =====
+// ===== 渲染详情 =====
 function renderDetail(index) {
   const d = currentResults[index] || currentResults[0];
-  document.getElementById('itemEmoji').textContent = d.emoji || '👕';
+
+  // 原图显示
+  const imgContainer = document.getElementById('itemImage');
+  if (currentImage) {
+    imgContainer.innerHTML = '<img src="' + currentImage + '" alt="扫描原图">';
+    imgContainer.onclick = function() { openImageViewer(currentImage); };
+  } else {
+    imgContainer.innerHTML = '<span class="item-emoji">' + (d.emoji || '👕') + '</span>';
+    imgContainer.onclick = null;
+  }
+
   document.getElementById('itemName').textContent = d.name || '未知物料';
   document.getElementById('itemTag').textContent = d.type || '-';
 
@@ -262,7 +279,114 @@ function renderDetail(index) {
   setTimeout(() => { cv.textContent = (d.confidence || 92).toFixed(1) + '%'; }, 400);
 }
 
-// ===== 手动输入 =====
+// ===== 历史记录 =====
+function saveToHistory() {
+  if (!currentResults || currentResults.length === 0) return;
+  const history = loadHistory();
+  const entry = {
+    id: Date.now(),
+    timestamp: new Date().toLocaleString('zh-CN'),
+    image: currentImage || null,
+    results: JSON.parse(JSON.stringify(currentResults)),
+    selectedIndex: selectedIndex,
+    name: currentResults[selectedIndex]?.name || '未知物料'
+  };
+  history.unshift(entry);
+  if (history.length > 50) history.length = 50; // 最多保留50条
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.warn('存储空间不足，尝试清理旧记录');
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 10)));
+    } catch (e2) {}
+  }
+}
+
+function loadHistory() {
+  try {
+    const data = localStorage.getItem(HISTORY_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function openHistory() {
+  renderHistoryList();
+  document.getElementById('historyOverlay').classList.remove('hidden');
+}
+
+function closeHistory() {
+  document.getElementById('historyOverlay').classList.add('hidden');
+}
+
+function renderHistoryList() {
+  const container = document.getElementById('historyList');
+  const history = loadHistory();
+  container.innerHTML = '';
+
+  if (history.length === 0) {
+    container.innerHTML = '<div class="history-empty">暂无扫描记录</div>';
+    document.getElementById('clearHistoryBtn').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('clearHistoryBtn').style.display = 'block';
+
+  history.forEach((item, i) => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+
+    const thumb = document.createElement('div');
+    thumb.className = 'history-thumb';
+    if (item.image) {
+      thumb.innerHTML = '<img src="' + item.image + '" alt="缩略图">';
+    } else {
+      thumb.innerHTML = '<span style="font-size:24px">👕</span>';
+    }
+
+    const info = document.createElement('div');
+    info.className = 'history-info';
+    info.innerHTML = '<div class="history-name">' + (item.name || '未知物料') + '</div>' +
+      '<div class="history-time">' + (item.timestamp || '') + '</div>';
+
+    const del = document.createElement('button');
+    del.className = 'history-del';
+    del.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+    del.onclick = (e) => { e.stopPropagation(); deleteHistoryItem(item.id); };
+
+    div.appendChild(thumb);
+    div.appendChild(info);
+    div.appendChild(del);
+    div.onclick = () => viewHistoryItem(item.id);
+    container.appendChild(div);
+  });
+}
+
+function deleteHistoryItem(id) {
+  const history = loadHistory().filter(h => h.id !== id);
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
+  renderHistoryList();
+}
+
+function clearHistory() {
+  if (!confirm('确定清空所有扫描记录？')) return;
+  try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+  renderHistoryList();
+}
+
+function viewHistoryItem(id) {
+  const history = loadHistory();
+  const item = history.find(h => h.id === id);
+  if (!item) return;
+
+  currentResults = JSON.parse(JSON.stringify(item.results));
+  currentImage = item.image || null;
+  selectedIndex = item.selectedIndex || 0;
+  closeHistory();
+  renderAll();
+}
 function openManualInput() {
   ['manualName','manualType','manualFabric','manualDisassemble','manualCategory'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('manualOverlay').classList.remove('hidden');
@@ -281,9 +405,11 @@ function submitManualInput() {
     name, type, fabric, disassemble, category, confidence: 100,
     materials: [{ label: '待确认', color: '#64748B' }]
   }];
+  currentImage = null;
   selectedIndex = 0;
   closeManualInput();
-  closeResult();
+  document.getElementById('resultOverlay').classList.add('hidden');
+  closeEditModal();
   setTimeout(() => renderAll(), 100);
 }
 
@@ -307,9 +433,23 @@ function submitEdit() {
 
 // ===== 关闭结果 =====
 function closeResult() {
+  saveToHistory();
   document.getElementById('resultOverlay').classList.add('hidden');
   closeEditModal();
   currentResults = null;
+  currentImage = null;
+}
+
+// ===== 大图查看 =====
+function openImageViewer(src) {
+  if (!src) return;
+  document.getElementById('viewerImage').src = src;
+  document.getElementById('imageViewer').classList.remove('hidden');
+}
+
+function closeImageViewer() {
+  document.getElementById('imageViewer').classList.add('hidden');
+  document.getElementById('viewerImage').src = '';
 }
 
 function adjustColor(hex, percent) {
@@ -329,7 +469,7 @@ document.addEventListener('keydown', (e) => {
     else if (!document.getElementById('scanningOverlay').classList.contains('hidden')) {}
     else startScan();
   }
-  if (e.key === 'Escape') { closeResult(); closeManualInput(); closeEditModal(); }
+  if (e.key === 'Escape') { closeResult(); closeManualInput(); closeEditModal(); closeImageViewer(); closeHistory(); }
 });
 
 document.addEventListener('DOMContentLoaded', () => {

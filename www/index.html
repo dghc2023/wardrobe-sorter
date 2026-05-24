@@ -21,6 +21,9 @@
         <div class="header-left">
           <span class="status-dot"></span>
           <span class="status-text">系统就绪</span>
+          <span class="history-btn" onclick="openHistory()" title="扫描历史">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
         </div>
         <div class="header-title">智能素材分拣一体机</div>
         <div class="header-right">
@@ -260,6 +263,31 @@
         <button class="permit-btn" onclick="requestPermission()">启用相机</button>
       </div>
     </div>
+  </div>
+
+  <!-- 历史记录面板 -->
+  <div id="historyOverlay" class="history-overlay hidden">
+    <div class="history-panel">
+      <div class="history-handle"></div>
+      <div class="history-header">
+        <span class="history-title">扫描历史</span>
+        <div class="history-header-actions">
+          <button id="clearHistoryBtn" class="history-clear-btn" onclick="clearHistory()" style="display:none">清空</button>
+          <button class="close-btn" onclick="closeHistory()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+  </div>
+
+  <!-- 大图查看器 -->
+  <div id="imageViewer" class="image-viewer hidden" onclick="closeImageViewer()">
+    <div class="viewer-close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </div>
+    <img id="viewerImage" class="viewer-image" src="" alt="原图">
   </div>
 
   <script src="js/data.js"></script>
