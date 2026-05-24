@@ -12,15 +12,11 @@
 </head>
 <body>
   <div id="app">
-    <!-- 摄像头画面 -->
     <video id="cameraFeed" autoplay playsinline></video>
 
-    <!-- 摄像头遮罩覆盖层 -->
     <div class="camera-overlay">
-      <!-- 测量网格 -->
       <div class="measure-grid"></div>
 
-      <!-- 顶部信息栏 -->
       <header id="header">
         <div class="header-left">
           <span class="status-dot"></span>
@@ -32,7 +28,6 @@
         </div>
       </header>
 
-      <!-- 扫描区域 -->
       <div class="scan-area">
         <div class="scan-frame">
           <div class="frame-corner tl"></div>
@@ -40,25 +35,20 @@
           <div class="frame-corner bl"></div>
           <div class="frame-corner br"></div>
           <div class="scan-line"></div>
-          <!-- 刻度标记 -->
           <div class="tick-marks top"></div>
           <div class="tick-marks bottom"></div>
           <div class="tick-marks left"></div>
           <div class="tick-marks right"></div>
         </div>
-
         <div class="scan-hint">
           <span id="scanStatusText">将待分拣物料置于扫描框内</span>
         </div>
-
-        <!-- 环境光传感器图标 -->
         <div class="env-indicator">
           <span class="env-dot"></span>
           <span>光照适宜</span>
         </div>
       </div>
 
-      <!-- 底部操作栏 -->
       <div class="bottom-bar">
         <div class="camera-switch" onclick="switchCamera()">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -73,9 +63,13 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 16 4-4 3 3 5-5 6 6"/></svg>
         </div>
       </div>
+      <div class="bottom-extra" onclick="openManualInput()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span>手动输入</span>
+      </div>
     </div>
 
-    <!-- 扫描中提示 -->
+    <!-- 扫描中 -->
     <div id="scanningOverlay" class="scanning-overlay hidden">
       <div class="scanning-panel">
         <div class="scanning-spinner">
@@ -100,7 +94,7 @@
       </div>
     </div>
 
-    <!-- 识别结果面板 -->
+    <!-- 结果面板 -->
     <div id="resultOverlay" class="result-overlay hidden">
       <div class="result-panel">
         <div class="result-handle"></div>
@@ -110,13 +104,17 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
           </div>
           <span>物料分析报告</span>
+          <button class="edit-btn" id="editBtn" onclick="openEditModal()" title="编辑">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
           <button class="close-btn" onclick="closeResult()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
 
+        <div class="result-tabs" id="resultTabs"></div>
+
         <div class="result-body">
-          <!-- 识别物品主图 -->
           <div class="item-preview">
             <div class="item-image" id="itemImage">
               <span class="item-emoji" id="itemEmoji">👕</span>
@@ -125,12 +123,11 @@
               <div class="item-name" id="itemName">-</div>
               <div class="item-tag" id="itemTag">-</div>
             </div>
-            <div class="confidence-badge" id="confidenceBadge">
+            <div class="confidence-badge">
               <span class="conf-num" id="confidenceValue">0%</span>
             </div>
           </div>
 
-          <!-- 分析详情卡片 -->
           <div class="detail-cards">
             <div class="detail-card">
               <div class="card-icon">
@@ -170,27 +167,9 @@
             </div>
           </div>
 
-          <!-- 素材拆解图 -->
           <div class="material-section">
             <div class="section-label">素材拆解分析</div>
-            <div class="material-grid" id="materialGrid">
-              <div class="material-item">
-                <div class="material-img" id="mat1"></div>
-                <span class="material-label" id="matLabel1">-</span>
-              </div>
-              <div class="material-item">
-                <div class="material-img" id="mat2"></div>
-                <span class="material-label" id="matLabel2">-</span>
-              </div>
-              <div class="material-item">
-                <div class="material-img" id="mat3"></div>
-                <span class="material-label" id="matLabel3">-</span>
-              </div>
-              <div class="material-item">
-                <div class="material-img" id="mat4"></div>
-                <span class="material-label" id="matLabel4">-</span>
-              </div>
-            </div>
+            <div class="material-chips" id="materialChips"></div>
           </div>
         </div>
 
@@ -207,7 +186,70 @@
       </div>
     </div>
 
-    <!-- 相机权限请求 -->
+    <!-- 手动输入弹窗 -->
+    <div id="manualOverlay" class="manual-overlay hidden">
+      <div class="manual-panel">
+        <div class="manual-header">
+          <span>手动输入物料信息</span>
+          <button class="close-btn" onclick="closeManualInput()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="manual-body">
+          <div class="field-group">
+            <label>物料名称</label>
+            <input id="manualName" placeholder="例：女士收腰连衣裙" />
+          </div>
+          <div class="field-group">
+            <label>成衣种类</label>
+            <input id="manualType" placeholder="例：连衣裙 / 中长款" />
+          </div>
+          <div class="field-group">
+            <label>面料成分</label>
+            <input id="manualFabric" placeholder="例：涤纶 65% · 粘纤 30% · 氨纶 5%" />
+          </div>
+          <div class="field-group">
+            <label>建议拆解方案</label>
+            <textarea id="manualDisassemble" rows="2" placeholder="1) 分离拉链 2) 分类回收"></textarea>
+          </div>
+          <div class="field-group">
+            <label>库存分类建议</label>
+            <input id="manualCategory" placeholder="例：B类 · 混纺织物 · 回收再造纤维" />
+          </div>
+        </div>
+        <div class="manual-footer">
+          <button class="action-btn primary" onclick="submitManualInput()">确认提交</button>
+          <button class="action-btn secondary" onclick="closeManualInput()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div id="editOverlay" class="manual-overlay hidden">
+      <div class="manual-panel">
+        <div class="manual-header">
+          <span>编辑物料信息</span>
+          <button class="close-btn" onclick="closeEditModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="manual-body">
+          <div class="field-group">
+            <label>物料名称</label>
+            <input id="editName" />
+          </div>
+          <p style="font-size:12px;color:var(--text-light);margin:8px 0 0;line-height:1.5">
+            其余信息为 AI 辅助分析结果，仅供参考。
+          </p>
+        </div>
+        <div class="manual-footer">
+          <button class="action-btn primary" onclick="submitEdit()">保存修改</button>
+          <button class="action-btn secondary" onclick="closeEditModal()">取消</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 相机权限 -->
     <div id="permitOverlay" class="permit-overlay hidden">
       <div class="permit-panel">
         <div class="permit-icon">
