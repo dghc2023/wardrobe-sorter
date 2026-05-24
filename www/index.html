@@ -241,11 +241,24 @@
         <div class="manual-body">
           <div class="field-group">
             <label>物料名称</label>
-            <input id="editName" />
+            <input id="editName" placeholder="例：女士收腰连衣裙" />
           </div>
-          <p style="font-size:12px;color:var(--text-light);margin:8px 0 0;line-height:1.5">
-            其余信息为 AI 辅助分析结果，仅供参考。
-          </p>
+          <div class="field-group">
+            <label>成衣种类</label>
+            <input id="editType" placeholder="例：连衣裙 / 中长款" />
+          </div>
+          <div class="field-group">
+            <label>面料成分</label>
+            <input id="editFabric" placeholder="例：涤纶 65% · 粘纤 30% · 氨纶 5%" />
+          </div>
+          <div class="field-group">
+            <label>建议拆解方案</label>
+            <textarea id="editDisassemble" rows="2" placeholder="1) 分离拉链 2) 分类回收"></textarea>
+          </div>
+          <div class="field-group">
+            <label>库存分类建议</label>
+            <input id="editCategory" placeholder="例：B类 · 混纺织物 · 回收再造纤维" />
+          </div>
         </div>
         <div class="manual-footer">
           <button class="action-btn primary" onclick="submitEdit()">保存修改</button>

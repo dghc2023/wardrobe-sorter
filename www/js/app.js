@@ -13,6 +13,7 @@ let currentImage = null; // 当前扫描的原图
 let selectedIndex = 0;
 let isScanning = false;
 let progressInterval = null;
+let viewingHistoryId = null; // 正在查看的历史记录ID
 const HISTORY_KEY = 'wardrobe_scan_history';
 
 function updateTime() {
@@ -283,6 +284,23 @@ function renderDetail(index) {
 function saveToHistory() {
   if (!currentResults || currentResults.length === 0) return;
   const history = loadHistory();
+
+  if (viewingHistoryId) {
+    // 更新已有记录
+    const idx = history.findIndex(h => h.id === viewingHistoryId);
+    if (idx !== -1) {
+      history[idx].results = JSON.parse(JSON.stringify(currentResults));
+      history[idx].selectedIndex = selectedIndex;
+      history[idx].name = currentResults[selectedIndex]?.name || '未知物料';
+      history[idx].image = currentImage || history[idx].image;
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+      } catch (e) { console.warn('保存失败'); }
+      return;
+    }
+  }
+
+  // 新建记录
   const entry = {
     id: Date.now(),
     timestamp: new Date().toLocaleString('zh-CN'),
@@ -292,7 +310,7 @@ function saveToHistory() {
     name: currentResults[selectedIndex]?.name || '未知物料'
   };
   history.unshift(entry);
-  if (history.length > 50) history.length = 50; // 最多保留50条
+  if (history.length > 50) history.length = 50;
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch (e) {
@@ -381,6 +399,7 @@ function viewHistoryItem(id) {
   const item = history.find(h => h.id === id);
   if (!item) return;
 
+  viewingHistoryId = id;
   currentResults = JSON.parse(JSON.stringify(item.results));
   currentImage = item.image || null;
   selectedIndex = item.selectedIndex || 0;
@@ -416,7 +435,12 @@ function submitManualInput() {
 // ===== 编辑弹窗 =====
 function openEditModal() {
   if (!currentResults || !currentResults[selectedIndex]) return;
-  document.getElementById('editName').value = currentResults[selectedIndex].name || '';
+  const d = currentResults[selectedIndex];
+  document.getElementById('editName').value = d.name || '';
+  document.getElementById('editType').value = d.type || '';
+  document.getElementById('editFabric').value = d.fabric || '';
+  document.getElementById('editDisassemble').value = d.disassemble || '';
+  document.getElementById('editCategory').value = d.category || '';
   document.getElementById('editOverlay').classList.remove('hidden');
 }
 
@@ -424,11 +448,23 @@ function closeEditModal() { document.getElementById('editOverlay').classList.add
 
 function submitEdit() {
   if (!currentResults || !currentResults[selectedIndex]) return;
+  const d = currentResults[selectedIndex];
   const name = document.getElementById('editName').value.trim();
-  if (name) currentResults[selectedIndex].name = name;
+  const type = document.getElementById('editType').value.trim();
+  const fabric = document.getElementById('editFabric').value.trim();
+  const disassemble = document.getElementById('editDisassemble').value.trim();
+  const category = document.getElementById('editCategory').value.trim();
+
+  if (name) d.name = name;
+  if (type) d.type = type;
+  if (fabric) d.fabric = fabric;
+  if (disassemble) d.disassemble = disassemble;
+  if (category) d.category = category;
+
   closeEditModal();
   renderTabs();
   renderDetail(selectedIndex);
+  saveToHistory(); // 编辑后立即保存到历史记录
 }
 
 // ===== 关闭结果 =====
@@ -438,6 +474,7 @@ function closeResult() {
   closeEditModal();
   currentResults = null;
   currentImage = null;
+  viewingHistoryId = null;
 }
 
 // ===== 大图查看 =====
