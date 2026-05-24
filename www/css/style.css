@@ -94,6 +94,7 @@ html, body {
   padding: 6px 14px 6px 10px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
 }
 .status-dot {
   width: 7px; height: 7px;
@@ -136,6 +137,8 @@ html, body {
   padding: 6px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .header-right {
   background: rgba(0,0,0,0.3);
@@ -144,6 +147,7 @@ html, body {
   padding: 6px 14px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
 }
 .header-right .time {
   font-size: 13px;
@@ -448,6 +452,25 @@ html, body {
   width: 1px;
   height: 28px;
   background: var(--border);
+}
+
+.scanning-cancel {
+  margin-top: 16px;
+  padding: 8px 24px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-solid);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.scanning-cancel:active {
+  background: #FEE2E2;
+  color: #DC2626;
+  border-color: #FCA5A5;
 }
 
 /* ===== 识别结果面板 ===== */
@@ -1045,6 +1068,87 @@ html, body {
   object-fit: contain;
   border-radius: 4px;
   box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+/* ===== 确认弹窗 ===== */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-panel {
+  width: 100%;
+  max-width: 320px;
+  background: var(--surface-solid);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px 20px;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  animation: scaleIn 0.25s ease;
+}
+
+.confirm-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #FFFBEB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 14px;
+}
+
+.confirm-message {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-actions .action-btn {
+  flex: 1;
+  padding: 11px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.confirm-actions .action-btn:active {
+  transform: scale(0.97);
+}
+
+.confirm-cancel {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.confirm-cancel:active {
+  background: var(--border);
+}
+
+.confirm-ok {
+  background: #DC2626;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(220,38,38,0.25);
+}
+.confirm-ok:active {
+  background: #B91C1C;
 }
 
 /* ===== 通用 ===== */

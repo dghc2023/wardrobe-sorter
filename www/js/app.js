@@ -14,6 +14,8 @@ let selectedIndex = 0;
 let isScanning = false;
 let progressInterval = null;
 let viewingHistoryId = null; // 正在查看的历史记录ID
+let abortController = null; // 用于取消扫描请求
+let scanCancelled = false; // 标记是否被取消
 const HISTORY_KEY = 'wardrobe_scan_history';
 
 function updateTime() {
@@ -119,6 +121,8 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ===== API 识别 =====
 async function recognizeImage(base64Image) {
   isScanning = true;
+  scanCancelled = false;
+  abortController = new AbortController();
   const overlay = document.getElementById('scanningOverlay');
   overlay.classList.remove('hidden');
 
@@ -156,6 +160,7 @@ async function recognizeImage(base64Image) {
     const resp = await fetch(API_CONFIG.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_CONFIG.apiKey },
+      signal: abortController.signal,
       body: JSON.stringify({
         model: API_CONFIG.model,
         messages: [
@@ -176,17 +181,43 @@ async function recognizeImage(base64Image) {
     if (parsed) { currentResults = parsed; }
     else { throw new Error('parse fail'); }
   } catch (err) {
+    if (err.name === 'AbortError') return; // 用户取消，静默退出
     console.error('API error:', err);
     const shuffled = [...MOCK_DATA].sort(() => Math.random() - 0.5);
     currentResults = shuffled.slice(0, 3);
   }
 
+  if (scanCancelled) { scanCancelled = false; return; }
   stopProgressAnim();
   await delay(400);
   overlay.classList.add('hidden');
   isScanning = false;
+  abortController = null;
   selectedIndex = 0;
   renderAll();
+}
+
+// ===== 取消扫描 =====
+async function cancelScan() {
+  if (!isScanning) return;
+  const ok = await showConfirm('确定要取消当前扫描？');
+  if (!ok) return;
+
+  scanCancelled = true;
+
+  // 中止 API 请求
+  if (abortController) {
+    abortController.abort();
+    abortController = null;
+  }
+
+  // 停止进度动画
+  stopProgressAnim();
+  if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+
+  // 隐藏扫描遮罩
+  document.getElementById('scanningOverlay').classList.add('hidden');
+  isScanning = false;
 }
 
 // ===== 开始扫描 =====
@@ -204,12 +235,14 @@ function startScan() {
 
 function showMockScan() {
   isScanning = true;
+  scanCancelled = false;
   const overlay = document.getElementById('scanningOverlay');
   overlay.classList.remove('hidden');
   const video = document.getElementById('cameraFeed');
   if (video && video.videoWidth) document.getElementById('statResolution').textContent = video.videoWidth + '×' + video.videoHeight;
   startProgressAnim();
   setTimeout(() => {
+    if (scanCancelled) { scanCancelled = false; return; }
     stopProgressAnim();
     setTimeout(() => { overlay.classList.add('hidden'); isScanning = false; renderAll(); }, 400);
   }, 3000);
@@ -388,8 +421,9 @@ function deleteHistoryItem(id) {
   renderHistoryList();
 }
 
-function clearHistory() {
-  if (!confirm('确定清空所有扫描记录？')) return;
+async function clearHistory() {
+  const ok = await showConfirm('确定清空所有扫描记录？');
+  if (!ok) return;
   try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
   renderHistoryList();
 }
@@ -468,6 +502,46 @@ function submitEdit() {
   saveToHistory(); // 编辑后立即保存到历史记录
 }
 
+// ===== 确认弹窗 =====
+let confirmResolver = null;
+
+function showConfirm(message) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('confirmOverlay');
+    const panel = overlay.querySelector('.confirm-panel');
+    const msgEl = document.getElementById('confirmMessage');
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+
+    msgEl.textContent = message;
+    overlay.classList.remove('hidden');
+    confirmResolver = resolve;
+
+    function cleanup(result) {
+      overlay.classList.add('hidden');
+      okBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      panel.onclick = null;
+      confirmResolver = null;
+      resolve(result);
+    }
+
+    okBtn.onclick = (e) => { e.stopPropagation(); cleanup(true); };
+    cancelBtn.onclick = (e) => { e.stopPropagation(); cleanup(false); };
+    panel.onclick = (e) => e.stopPropagation();
+    overlay.onclick = () => cleanup(false);
+  });
+}
+
+function closeConfirm() {
+  if (confirmResolver) {
+    confirmResolver(false);
+    document.getElementById('confirmOverlay').classList.add('hidden');
+    confirmResolver = null;
+  }
+}
+
 // ===== 关闭结果 =====
 function closeResult() {
   saveToHistory();
@@ -507,7 +581,7 @@ document.addEventListener('keydown', (e) => {
     else if (!document.getElementById('scanningOverlay').classList.contains('hidden')) {}
     else startScan();
   }
-  if (e.key === 'Escape') { closeResult(); closeManualInput(); closeEditModal(); closeImageViewer(); closeHistory(); }
+  if (e.key === 'Escape') { closeResult(); closeManualInput(); closeEditModal(); closeImageViewer(); closeHistory(); closeConfirm(); }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
